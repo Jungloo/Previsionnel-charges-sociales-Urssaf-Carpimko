@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jungloo - Outil d'anticipation des charges & impôts</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      /* Style de la bulle BD Jungloo */
+      .speech-bubble {
+        position: relative;
+        background: #ffffff;
+        border: 2px solid #227836;
+        border-radius: 16px;
+        padding: 18px;
+        font-size: 0.95rem;
+        color: #333;
+        line-height: 1.5;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      }
+
+      .speech-bubble::after {
+        content: '';
+        position: absolute;
+        bottom: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 12px 12px 0;
+        border-style: solid;
+        border-color: #ffffff transparent;
+        display: block;
+        width: 0;
+      }
+
+      .speech-bubble::before {
+        content: '';
+        position: absolute;
+        bottom: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 13px 13px 0;
+        border-style: solid;
+        border-color: #227836 transparent;
+        display: block;
+        width: 0;
+      }
+
+      .jungloo-avatar {
+        width: 85px;
+        height: auto;
+        margin-top: 10px;
+      }
+
+      .drop-zone--over {
+        border-color: #227836 !important;
+        background-color: #f0fdf4 !important;
+      }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <div class="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- En-tête Jungloo -->
+        <header class="text-center mb-8">
+            <p class="text-xs font-extrabold tracking-widest text-[#227836] mb-3 uppercase">
+                OUTIL D'ANTICIPATION DES CHARGES SOCIALES & IR — CLIENT JUNGLOO
+            </p>
+            
+            <div class="flex items-center justify-center gap-3 sm:gap-4 max-w-3xl mx-auto">
+                <img src="https://www.jungloo.fr/themes/custom/jungloo/assets/img/crayon.svg" alt="Mascotte Jungloo" class="w-10 h-10 sm:w-14 sm:h-14 flex-shrink-0">
+                <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#FD6969] tracking-tight leading-tight text-left">
+                    Analyse & Calcul de votre Balance Générale au Réel
+                </h1>
+            </div>
+
+            <p class="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto">
+                Importez votre fichier FEC pour réaliser la simulation de vos cotisations et prélèvements au régime réel.
+            </p>
+        </header>
+
+        <main class="space-y-8">
+
+            <!-- ÉTAPE 1 : Sélection de la Date & Dépôt du FEC -->
+            <section id="step-upload" class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto space-y-6">
+                
+                <!-- Champ de sélection de la Date des opérations -->
+                <div>
+                    <label for="date-compta" class="block text-sm font-bold text-slate-700 mb-1">
+                        Date des dernières opérations en comptabilité :
+                    </label>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <input type="date" id="date-compta" class="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#227836] focus:border-[#227836] text-sm font-medium text-slate-800">
+                        <button type="button" id="btn-today" class="text-xs bg-emerald-50 text-[#227836] border border-emerald-200 hover:bg-emerald-100 font-bold py-2 px-3 rounded-xl transition duration-150">
+                            Aujourd'hui
+                        </button>
+                    </div>
+                    <p id="prorata-info" class="text-xs text-slate-500 mt-1 italic"></p>
+                </div>
+
+                <!-- Zone de Dépôt / Upload -->
+                <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center bg-[#F6F9F7] hover:bg-emerald-50/50 transition duration-200 cursor-pointer">
+                    <input type="file" id="file-input" accept=".txt,.csv" class="hidden">
+                    
+                    <div class="space-y-3">
+                        <div class="mx-auto w-12 h-12 bg-emerald-100 text-[#227836] rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-700">Glissez-déposez votre fichier FEC / TXT ici</p>
+                            <p class="text-xs text-slate-500 mt-1">Formats acceptés : `.txt` (séparateur pipe `|`, espace ou tabulation)</p>
+                        </div>
+
+                        <button type="button" id="btn-browse" class="inline-flex items-center gap-2 bg-[#227836] hover:bg-[#1b5e2b] text-white font-extrabold py-2.5 px-5 rounded-xl shadow-md transition duration-200 text-xs cursor-pointer uppercase tracking-wider">
+                            Déposer le document
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Récapitulatif FEC et Données complémentaires à compléter -->
+                <div id="fec-recap-section" class="hidden border-t border-slate-200 pt-5 space-y-5">
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 text-sm">
+                        <div>
+                            <p class="font-bold text-slate-800">
+                                Recettes nettes : <span id="recap-recettes" class="text-[#227836] font-extrabold">0 €</span>
+                            </p>
+                            <p class="text-xs text-slate-500 italic mt-0.5">
+                                il s’agit des recettes nettes des rétrocessions versées aux remplaçants
+                            </p>
+                        </div>
+
+                        <p class="font-bold text-slate-800">
+                            Recettes brutes : <span id="recap-ca-brut" class="text-[#227836] font-extrabold">0 €</span>
+                        </p>
+                        
+                        <!-- Précalcul CA_CONV -->
+                        <p class="font-bold text-slate-800">
+                            Recettes conventionnées calculées (CA_CONV) : <span id="recap-ca-conv" class="text-[#227836] font-extrabold">0 €</span>
+                        </p>
+
+                        <!-- Option de saisie manuelle -->
+                        <div class="flex items-center gap-2 pt-1">
+                            <input type="checkbox" id="chk-manual-ca-conv" class="w-4 h-4 text-[#227836] rounded border-slate-300 focus:ring-[#227836] cursor-pointer">
+                            <label for="chk-manual-ca-conv" class="text-xs font-semibold text-slate-700 cursor-pointer">
+                                Saisir manuellement mes recettes conventionnées
+                            </label>
+                        </div>
+
+                        <!-- Champ de saisie manuelle (masqué par défaut) -->
+                        <div id="container-manual-ca-conv" class="hidden flex items-center gap-2 pt-1 pl-6">
+                            <label for="input-ca-conv" class="text-xs font-semibold text-slate-700">Recettes conventionnées manuelles (€) :</label>
+                            <input type="number" id="input-ca-conv" value="0" step="any" class="w-32 px-3 py-1 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-[#227836]">
+                        </div>
+
+                        <p class="font-bold text-slate-800 pt-1">
+                            Dépenses : <span id="recap-depenses" class="text-slate-700 font-extrabold">0 €</span>
+                        </p>
+
+                        <p class="text-xs text-slate-500 italic pt-2">
+                            Pour effectuer la simulation, les données issues du FEC sont ajustées au prorata temporis.
+                        </p>
+                    </div>
+
+                    <!-- Zone à compléter -->
+                    <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 space-y-4">
+                        <h3 class="text-xs font-extrabold text-[#227836] uppercase tracking-wider">
+                            *** Zone à compléter ***
+                        </h3>
+
+                        <div class="space-y-4">
+                            <!-- Ligne 1 : Statut remplaçant -->
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/50 pb-3">
+                                <label for="select-rempla" class="text-xs font-bold text-slate-700">
+                                    Étiez-vous remplaçant au 1er janvier ?
+                                </label>
+                                <select id="select-rempla" class="w-full sm:w-48 px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#227836] bg-white">
+                                    <option value="">Choisir...</option>
+                                    <option value="OUI">Oui</option>
+                                    <option value="NON">Non</option>
+                                </select>
+                            </div>
+
+                            <!-- Ligne 2 : Cotisations Urssaf provisionnelles payées -->
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/50 pb-3">
+                                <div>
+                                    <label for="input-urssaf-paye" class="block text-xs font-bold text-slate-700">
+                                        Urssaf - Montant des cotisations provisionnelles payées :
+                                    </label>
+                                    <button type="button" id="btn-urssaf-help" class="text-xs text-[#227836] hover:underline font-semibold flex items-center gap-1 mt-0.5 cursor-pointer">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        Où trouver le montant à reporter ?
+                                    </button>
+                                </div>
+                                <div class="flex items-center gap-1.5 w-full sm:w-48">
+                                    <input type="number" id="input-urssaf-paye" value="0" min="0" step="any" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#227836] bg-white">
+                                    <span class="text-xs font-bold text-slate-600">€</span>
+                                </div>
+                            </div>
+
+                            <!-- Ligne 3 : IK et Blanchissage -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                                <div>
+                                    <label for="input-ik" class="block text-xs font-bold text-slate-700 mb-1">
+                                        Indemnités Kilométriques (€) :
+                                    </label>
+                                    <input type="number" id="input-ik" value="0" min="0" step="any" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#227836] bg-white">
+                                </div>
+
+                                <div>
+                                    <label for="input-blanchissage" class="block text-xs font-bold text-slate-700 mb-1">
+                                        Frais de blanchissage (€) :
+                                    </label>
+                                    <input type="number" id="input-blanchissage" value="0" min="0" step="any" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#227836] bg-white">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bouton SIMULER -->
+                    <div class="pt-2 text-center">
+                        <button type="button" id="btn-simuler" class="w-full bg-[#FD6969] hover:bg-[#e05555] text-white font-extrabold py-3.5 px-8 rounded-xl shadow-lg transition duration-200 text-sm uppercase tracking-wider cursor-pointer">
+                            SIMULER
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Message d'erreur éventuel -->
+                <div id="error-message" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl"></div>
+            </section>
+
+            <!-- ÉTAPE 2 : Section Résultats & Détail des Prélèvements -->
+            <section id="step-results" class="hidden space-y-6">
+
+                <!-- Barre d'actions supérieure -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <button type="button" id="btn-edit-inputs" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-extrabold py-2 px-4 rounded-xl shadow transition duration-200 text-xs uppercase tracking-wider cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Modifier ma saisie
+                    </button>
+
+                    <button type="button" id="btn-reload" class="text-xs text-[#227836] hover:underline font-bold flex items-center gap-1 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Changer de document
+                    </button>
+                </div>
+
+                <!-- SECTION SIMULATION -->
+                <div id="simulation-output" class="space-y-6">
+                    
+                    <!-- BLOC SPÉCIFIQUE : Assiettes de calcul -->
+                    <div id="assiettes-summary-block" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <!-- Généré dynamiquement en JS -->
+                    </div>
+
+                    <!-- Bulle de BD Jungloo & Mascotte (Position repositionnée) -->
+                    <div id="mascot-section" class="my-8 flex flex-col items-center">
+                        <div id="mascot-speech-bubble" class="speech-bubble max-w-2xl w-full text-left">
+                            <!-- Généré dynamiquement en JS lors de la simulation -->
+                        </div>
+                        <img src="https://www.jungloo.fr/themes/custom/jungloo/assets/img/content.svg" class="jungloo-avatar" alt="Mascotte Jungloo">
+                    </div>
+
+                    <!-- Ligne Accordéon -->
+                    <button type="button" id="btn-toggle-accordion" class="w-full bg-white border border-slate-200 hover:border-[#227836] p-4 rounded-2xl shadow-sm flex items-center justify-between transition duration-200 cursor-pointer">
+                        <span class="text-base font-extrabold text-[#227836] uppercase tracking-wider">
+                            RÉGIME RÉEL - DÉTAIL DES PRÉLÈVEMENTS
+                        </span>
+                        <svg id="accordion-arrow" class="w-6 h-6 text-[#227836] transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Conteneur des 3 Tableaux -->
+                    <div id="accordion-content" class="space-y-8 pt-2">
+                        
+                        <!-- TABLEAU 1 : URSSAF -->
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-2 sm:p-4">
+                            
+                            <!-- Bandeau d'en-tête Urssaf -->
+                            <div class="bg-[#4848E6] text-white px-4 py-3 flex items-center gap-3 rounded-t-sm mb-2">
+                                <span class="w-3.5 h-3.5 bg-[#8C8CF5] inline-block flex-shrink-0"></span>
+                                <h3 id="urssaf-title-banner" class="font-extrabold text-sm sm:text-base tracking-wide uppercase">
+                                    MONTANT DÉTAILLÉ DE VOS COTISATIONS ET CONTRIBUTIONS 2025
+                                </h3>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                        <tr class="text-[#3B38D8] font-bold border-b-2 border-slate-900 text-[11px] sm:text-xs">
+                                            <th scope="col" class="py-3 px-2 text-left w-2/5">Cotisations/contributions</th>
+                                            <th scope="col" class="py-3 px-2 text-center">Base<br>de calcul<br>retenue</th>
+                                            <th scope="col" class="py-3 px-2 text-center">Taux<br>(%)</th>
+                                            <th scope="col" class="py-3 px-2 text-center">Montant<br>des cotisations<br>avant exonération</th>
+                                            <th scope="col" class="py-3 px-2 text-center">Nature de<br>l’exonération</th>
+                                            <th scope="col" class="py-3 px-2 text-center">Montant de<br>l’exonération</th>
+                                            <th scope="col" class="py-3 px-2 text-right">Montants des<br>cotisations à payer</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-urssaf" class="text-slate-900 text-xs font-medium">
+                                        <!-- Généré dynamiquement en JS -->
+                                    </tbody>
+                                    <tfoot id="tfoot-urssaf" class="border-t-2 border-slate-900 text-xs font-extrabold text-slate-900">
+                                        <!-- Ligne TOTAL générée en JS -->
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TABLEAU 2 : CARPIMKO -->
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="bg-slate-800 text-white px-6 py-4">
+                                <h3 class="font-extrabold text-sm uppercase tracking-wider">
+                                    MONTANT DÉTAILLÉ DE VOS COTISATIONS CARPIMKO
+                                </h3>
+                            </div>
+                            <div class="p-6 text-xs text-slate-500 text-center italic">
+                                Les cotisations de retraite et prévoyance CARPIMKO apparaîtront ici.
+                            </div>
+                        </div>
+
+                        <!-- TABLEAU 3 : RÉCAPITULATIF ET ÉCHÉANCIER -->
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="bg-slate-700 text-white px-6 py-4">
+                                <h3 class="font-extrabold text-sm uppercase tracking-wider">
+                                    RÉCAPITULATIF ET ÉCHÉANCIER DES PRÉLÈVEMENTS
+                                </h3>
+                            </div>
+                            <div class="p-6 text-xs text-slate-500 text-center italic">
+                                Le calendrier prévisionnel des prélèvements s'affichera ici.
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+        <!-- MODALE AIDE URSSAF -->
+        <div id="modal-urssaf" class="fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+                <!-- Barre d'en-tête de la modale avec bouton Retour -->
+                <div class="p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800 text-sm">
+                        Où trouver le montant des cotisations provisionnelles URSSAF
+                    </h3>
+                    <button type="button" id="btn-close-urssaf-modal" class="bg-[#227836] hover:bg-[#1b5e2b] text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition duration-150 flex items-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        Retour
+                    </button>
+                </div>
+                <!-- Zone d'affichage de l'image -->
+                <div class="p-4 overflow-y-auto flex-1 flex justify-center items-start bg-slate-50">
+                    <img src="URSSAF_3en1_PROVISIONNELLE.png" alt="Explication URSSAF 3en1 Provisionnelle" class="max-w-full h-auto rounded-xl border border-slate-200 shadow-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- Pied de page -->
+        <footer class="max-w-4xl mx-auto mt-12 mb-6 text-center text-xs text-slate-400 border-t border-slate-200 pt-6">
+            Outil d'anticipation des charges sociales et de l'impôt sur le revenu — Jungloo. Tous droits réservés.
+        </footer>
+    </div>
+
+    <!-- Script de traitement et de simulation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CONSTANTES DE CALCUL ET PLAFONDS PASS / SMIC ---
+            const PASS = 48060;
+            const SMIC_HORAIRE = 11.88;
+            const PASS_00176 = PASS * 0.0176;
+            const PASS_020 = PASS * 0.20;
+            const PASS_040 = PASS * 0.40;
+            const PASS_060 = PASS * 0.60;
+            const PASS_110 = PASS * 1.10;
+            const PASS_130 = PASS * 1.30;
+            const PASS_140 = PASS * 1.40;
+            const PASS_200 = PASS * 2.00;
+            const PASS_300 = PASS * 3.00;
+
+            // Taux IJ et Maladie additionnelle CARPIMKO
+            const TX_IJ_CARPIMKO_MICRO = 0.003; // 0,30%
+            const TAUX_MALADIE_ADDITIONNELLE_CARPIMKO = 0.0325; // 3,25%
+
+            // Constantes Allocations Familiales
+            const AF_CARPIMKO_REEL_01 = 0.00;
+            const AF_CARPIMKO_REEL_02 = 0.031;
+
+            // Constantes Taux Maladie CARPIMKO (2.2 & 2.3)
+            const MALAD_CARPIMKO_01 = 0.00;
+            const MALAD_CARPIMKO_02 = 0.015;
+            const MALAD_CARPIMKO_03 = 0.04;
+            const MALAD_CARPIMKO_04 = 0.065;
+            const MALAD_CARPIMKO_05 = 0.077;
+            const MALAD_CARPIMKO_06 = 0.085;
+
+            // Éléments du DOM
+            const dateInput = document.getElementById('date-compta');
+            const btnToday = document.getElementById('btn-today');
+            const prorataInfo = document.getElementById('prorata-info');
+
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            const btnBrowse = document.getElementById('btn-browse');
+            const errorMessage = document.getElementById('error-message');
+
+            const fecRecapSection = document.getElementById('fec-recap-section');
+            const recapRecettes = document.getElementById('recap-recettes');
+            const recapCaBrut = document.getElementById('recap-ca-brut');
+            const recapCaConv = document.getElementById('recap-ca-conv');
+            const chkManualCaConv = document.getElementById('chk-manual-ca-conv');
+            const containerManualCaConv = document.getElementById('container-manual-ca-conv');
+            const inputCaConv = document.getElementById('input-ca-conv');
+
+            const selectRempla = document.getElementById('select-rempla');
+            const inputUrssafPaye = document.getElementById('input-urssaf-paye');
+            const btnUrssafHelp = document.getElementById('btn-urssaf-help');
+            const modalUrssaf = document.getElementById('modal-urssaf');
+            const btnCloseUrssafModal = document.getElementById('btn-close-urssaf-modal');
+
+            const recapDepenses = document.getElementById('recap-depenses');
+            const inputIk = document.getElementById('input-ik');
+            const inputBlanchissage = document.getElementById('input-blanchissage');
+
+            const btnSimuler = document.getElementById('btn-simuler');
+            const btnEditInputs = document.getElementById('btn-edit-inputs');
+            const btnReload = document.getElementById('btn-reload');
+
+            const stepUpload = document.getElementById('step-upload');
+            const stepResults = document.getElementById('step-results');
+            const simulationOutput = document.getElementById('simulation-output');
+            const assiettesSummaryBlock = document.getElementById('assiettes-summary-block');
+            const mascotSpeechBubble = document.getElementById('mascot-speech-bubble');
+
+            const btnToggleAccordion = document.getElementById('btn-toggle-accordion');
+            const accordionContent = document.getElementById('accordion-content');
+            const accordionArrow = document.getElementById('accordion-arrow');
+
+            const tbodyUrssaf = document.getElementById('tbody-urssaf');
+            const tfootUrssaf = document.getElementById('tfoot-urssaf');
+            const urssafTitleBanner = document.getElementById('urssaf-title-banner');
+
+            let parsedData = null;
+
+            // --- GESTION DE LA MODALE D'AIDE URSSAF ---
+            btnUrssafHelp.addEventListener('click', () => {
+                modalUrssaf.classList.remove('hidden');
+            });
+
+            btnCloseUrssafModal.addEventListener('click', () => {
+                modalUrssaf.classList.add('hidden');
+            });
+
+            modalUrssaf.addEventListener('click', (e) => {
+                if (e.target === modalUrssaf) {
+                    modalUrssaf.classList.add('hidden');
+                }
+            });
+
+            // --- GESTION DE LA SAISIE MANUELLE CA_CONV ---
+            chkManualCaConv.addEventListener('change', () => {
+                if (chkManualCaConv.checked) {
+                    containerManualCaConv.classList.remove('hidden');
+                } else {
+                    containerManualCaConv.classList.add('hidden');
+                }
+            });
+
+            // --- GESTION DE LA DATE ET DU PRORATA ---
+            function initDate() {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${yyyy}-${mm}-${dd}`;
+                updateProrataInfo();
+            }
+
+            btnToday.addEventListener('click', initDate);
+            dateInput.addEventListener('change', updateProrataInfo);
+
+            function getProrataFactor() {
+                const val = dateInput.value;
+                if (!val) return 1;
+                const selDate = new Date(val);
+                const year = selDate.getFullYear();
+                
+                const startYear = new Date(year, 0, 1);
+                const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+                const totalDays = isLeap ? 366 : 365;
+
+                const diffDays = Math.floor((selDate - startYear) / (1000 * 60 * 60 * 24)) + 1;
+                if (diffDays <= 0) return 1;
+
+                return totalDays / diffDays;
+            }
+
+            function updateProrataInfo() {
+                const factor = getProrataFactor();
+                const selDate = new Date(dateInput.value);
+                if (isNaN(selDate.getTime())) return;
+                
+                const year = selDate.getFullYear();
+                const startYear = new Date(year, 0, 1);
+                const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+                const totalDays = isLeap ? 366 : 365;
+                const diffDays = Math.floor((selDate - startYear) / (1000 * 60 * 60 * 24)) + 1;
+
+                prorataInfo.textContent = `Prorata : ${diffDays} jours écoulés sur ${totalDays} (${(1 / factor * 100).toFixed(1)}% de l'année — Coeff : x${factor.toFixed(4)})`;
+            }
+
+            initDate();
+
+            // --- GESTION DRAG & DROP ---
+            btnBrowse.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('click', (e) => {
+                if (e.target !== btnBrowse && !btnBrowse.contains(e.target)) {
+                    fileInput.click();
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processFile(e.target.files[0]);
+                }
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.add('drop-zone--over');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.remove('drop-zone--over');
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                if (dt.files.length > 0) {
+                    processFile(dt.files[0]);
+                }
+            });
+
+            btnEditInputs.addEventListener('click', () => {
+                stepResults.classList.add('hidden');
+                stepUpload.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            btnReload.addEventListener('click', () => {
+                stepResults.classList.add('hidden');
+                stepUpload.classList.remove('hidden');
+                fecRecapSection.classList.add('hidden');
+                fileInput.value = '';
+                parsedData = null;
+                chkManualCaConv.checked = false;
+                containerManualCaConv.classList.add('hidden');
+                selectRempla.value = '';
+                inputUrssafPaye.value = '0';
+                showError('');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            function showError(msg) {
+                if (msg) {
+                    errorMessage.textContent = msg;
+                    errorMessage.classList.remove('hidden');
+                } else {
+                    errorMessage.textContent = '';
+                    errorMessage.classList.add('hidden');
+                }
+            }
+
+            // --- PARSER FEC ---
+            function processFile(file) {
+                showError('');
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    try {
+                        const content = e.target.result;
+                        parsedData = parseAndCalculateBalance(content);
+                        
+                        recapRecettes.textContent = formatEuro(parsedData.RECETTES_TOTALES);
+                        recapCaBrut.textContent = formatEuro(parsedData.CA_BRUT);
+                        recapCaConv.textContent = formatEuro(parsedData.CA_CONV_AUTO);
+                        inputCaConv.value = parsedData.CA_CONV_AUTO;
+                        recapDepenses.textContent = formatEuro(parsedData.DEPENSES_TOTALES);
+                        fecRecapSection.classList.remove('hidden');
+
+                    } catch (err) {
+                        showError("Erreur lors de la lecture du fichier : " + err.message);
+                    }
+                };
+
+                reader.onerror = function() {
+                    showError("Impossible de lire le fichier sélectionné.");
+                };
+
+                reader.readAsText(file, 'UTF-8');
+            }
+
+            function parseAndCalculateBalance(textContent) {
+                const lines = textContent.split(/\r?\n/).filter(line => line.trim() !== '');
+                if (lines.length < 2) {
+                    throw new Error("Le fichier est vide ou ne contient pas de données.");
+                }
+
+                const headerLine = lines[0];
+                let separator = headerLine.includes('|') ? '|' : (headerLine.includes('\t') ? '\t' : /\s+/);
+
+                const headers = headerLine.split(separator).map(h => h.trim());
+
+                const idxCompteNum = headers.findIndex(h => /CompteNum/i.test(h) || /N° Compte/i.test(h));
+                const idxCompteLib = headers.findIndex(h => /CompteLib/i.test(h) || /Libellé/i.test(h));
+                const idxDebit = headers.findIndex(h => /^Debit$/i.test(h));
+                const idxCredit = headers.findIndex(h => /^Credit$/i.test(h));
+                const idxMontant = headers.findIndex(h => /^Montant$/i.test(h));
+                const idxSens = headers.findIndex(h => /^Sens$/i.test(h));
+
+                if (idxCompteNum === -1) {
+                    throw new Error("Colonne 'CompteNum' introuvable dans le fichier FEC.");
+                }
+
+                const usesMontantSens = (idxMontant !== -1 && idxSens !== -1);
+                if (!usesMontantSens && (idxDebit === -1 || idxCredit === -1)) {
+                    throw new Error("Impossible de trouver les colonnes 'Debit'/'Credit' ou 'Montant'/'Sens'.");
+                }
+
+                const compteMap = {};
+
+                for (let i = 1; i < lines.length; i++) {
+                    const row = lines[i].split(separator).map(cell => cell.trim());
+                    if (row.length === 0 || !row[idxCompteNum]) continue;
+
+                    const compteNum = row[idxCompteNum];
+                    const compteLib = idxCompteLib !== -1 ? (row[idxCompteLib] || '') : '';
+
+                    let debit = 0;
+                    let credit = 0;
+
+                    if (usesMontantSens) {
+                        const montant = parseAmount(row[idxMontant]);
+                        const sens = (row[idxSens] || '').toUpperCase();
+                        if (sens === 'D') debit = montant;
+                        else if (sens === 'C') credit = montant;
+                    } else {
+                        debit = parseAmount(row[idxDebit]);
+                        credit = parseAmount(row[idxCredit]);
+                    }
+
+                    if (!compteMap[compteNum]) {
+                        compteMap[compteNum] = { compteNum, compteLib, totalDebit: 0, totalCredit: 0 };
+                    }
+
+                    compteMap[compteNum].totalDebit += debit;
+                    compteMap[compteNum].totalCredit += credit;
+                }
+
+                const accountsList = [];
+
+                for (const num in compteMap) {
+                    const acc = compteMap[num];
+                    let soldeDebit = 0;
+                    let soldeCredit = 0;
+
+                    if (acc.totalDebit > acc.totalCredit) {
+                        soldeDebit = acc.totalDebit - acc.totalCredit;
+                    } else if (acc.totalCredit > acc.totalDebit) {
+                        soldeCredit = acc.totalCredit - acc.totalDebit;
+                    }
+
+                    accountsList.push({
+                        num: acc.compteNum,
+                        soldeDebit,
+                        soldeCredit
+                    });
+                }
+
+                let recettesSoldeCredit = 0, recettesSoldeDebit = 0;
+                accountsList.forEach(acc => {
+                    if (acc.num.startsWith('7')) {
+                        recettesSoldeCredit += acc.soldeCredit;
+                        recettesSoldeDebit += acc.soldeDebit;
+                    }
+                });
+                const RECETTES_TOTALES = Math.round(recettesSoldeCredit - recettesSoldeDebit);
+
+                // Calcul du CA_BRUT (RECETTES_TOTALES - Compte n° 706900 solde créditeur + Compte n° 706900 solde débiteur)
+                const acc706900 = accountsList.find(a => a.num === '706900');
+                const soldeCred706900 = acc706900 ? acc706900.soldeCredit : 0;
+                const soldeDeb706900 = acc706900 ? acc706900.soldeDebit : 0;
+                const CA_BRUT = Math.round(RECETTES_TOTALES - soldeCred706900 + soldeDeb706900);
+
+                // Calcul automatique du CA_CONV (Comptes 706100, 706101, 706102, 706103, 706105, 706106, 706107)
+                const caConvAccounts = ['706100', '706101', '706102', '706103', '706105', '706106', '706107'];
+                let caConvCredit = 0, caConvDebit = 0;
+                accountsList.forEach(acc => {
+                    if (caConvAccounts.includes(acc.num)) {
+                        caConvCredit += acc.soldeCredit;
+                        caConvDebit += acc.soldeDebit;
+                    }
+                });
+                const CA_CONV_AUTO = Math.round(caConvCredit - caConvDebit);
+
+                let depensesSoldeDebit = 0, depensesSoldeCredit = 0;
+                accountsList.forEach(acc => {
+                    if (acc.num.startsWith('6')) {
+                        depensesSoldeDebit += acc.soldeDebit;
+                        depensesSoldeCredit += acc.soldeCredit;
+                    }
+                });
+                const DEPENSES_TOTALES = Math.round(depensesSoldeDebit - depensesSoldeCredit);
+
+                const RESULTAT_FISCAL = RECETTES_TOTALES - DEPENSES_TOTALES;
+
+                const targetAccounts = ['637810', '646530', '646520', '646510', '646350', '646250', '646200', '646600', '646500', '646100', '646300'];
+                let totalChargesSociales = 0;
+                targetAccounts.forEach(targetNum => {
+                    const found = accountsList.find(a => a.num === targetNum);
+                    if (found) {
+                        totalChargesSociales += (found.soldeDebit - found.soldeCredit);
+                    }
+                });
+                const CHARGES_SOCIALES_BG = Math.round(totalChargesSociales);
+
+                // Extraction Chèques Vacances (Compte n° 658600 : solde débiteur - solde créditeur)
+                const cvAccount = accountsList.find(a => a.num === '658600');
+                const CHEQUES_VACANCES = cvAccount ? Math.round(cvAccount.soldeDebit - cvAccount.soldeCredit) : 0;
+
+                return {
+                    RECETTES_TOTALES,
+                    CA_BRUT,
+                    CA_CONV_AUTO,
+                    DEPENSES_TOTALES,
+                    RESULTAT_FISCAL,
+                    CHARGES_SOCIALES_BG,
+                    REVENU_BRUT_SOCIAL: RESULTAT_FISCAL + CHARGES_SOCIALES_BG,
+                    CHEQUES_VACANCES: Math.max(0, CHEQUES_VACANCES)
+                };
+            }
+
+            // --- SIMULATION & CALCULS ---
+            btnSimuler.addEventListener('click', () => {
+                if (!parsedData) {
+                    showError("Veuillez d'abord déposer un fichier FEC valide.");
+                    return;
+                }
+
+                const REMPLA_CARPIMKO = selectRempla.value;
+                if (!REMPLA_CARPIMKO) {
+                    showError("Veuillez sélectionner si vous étiez remplaçant au 1er janvier.");
+                    return;
+                }
+
+                showError('');
+
+                const URSSAF_PAYE = parseFloat(inputUrssafPaye.value) || 0;
+
+                const selDate = new Date(dateInput.value);
+                const simYear = !isNaN(selDate.getTime()) ? selDate.getFullYear() : 2025;
+                const simYearNext = simYear + 1;
+                
+                // Formatage de la date en jj/mm/aaaa
+                let dateFormatted = "31/12/" + simYear;
+                if (dateInput.value) {
+                    const parts = dateInput.value.split('-');
+                    if (parts.length === 3) {
+                        dateFormatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    }
+                }
+
+                urssafTitleBanner.textContent = `MONTANT DÉTAILLÉ DE VOS COTISATIONS ET CONTRIBUTIONS ${simYear}`;
+
+                const IK_DEDUCTIBLE = parseFloat(inputIk.value) || 0;
+                const BLANCHISSAGE_DEDUCTIBLE = parseFloat(inputBlanchissage.value) || 0;
+
+                // Prise en compte du CA_CONV manuel ou automatique selon la case à cocher
+                const CA_CONV = chkManualCaConv.checked 
+                    ? (parseFloat(inputCaConv.value) || 0)
+                    : (parsedData.CA_CONV_AUTO || 0);
+
+                const PRORATA_CALCUL = getProrataFactor();
+
+                const RECETTES_PRORATA = Math.round(parsedData.RECETTES_TOTALES * PRORATA_CALCUL);
+                const CA_BRUT_PRORATA = Math.round(parsedData.CA_BRUT * PRORATA_CALCUL);
+                const DEPENSES_PRORATA = Math.round(parsedData.DEPENSES_TOTALES * PRORATA_CALCUL);
+                const CHARGES_SOCIALES_PRORATA = Math.round(parsedData.CHARGES_SOCIALES_BG * PRORATA_CALCUL);
+
+                // Calcul du CA conventionné proratisé (arrondi à l'unité)
+                const CA_CONV_PRORATA = Math.round(CA_CONV * PRORATA_CALCUL);
+
+                const RESULTAT_FISCAL_PRORATA = RECETTES_PRORATA - DEPENSES_PRORATA - IK_DEDUCTIBLE - BLANCHISSAGE_DEDUCTIBLE;
+                const REVENU_BRUT_SOCIAL_PRORATA = RESULTAT_FISCAL_PRORATA + CHARGES_SOCIALES_PRORATA;
+
+                // Abattement social
+                const ABATTEMENT_THEORIQUE = REVENU_BRUT_SOCIAL_PRORATA * 0.26;
+                let ABATTEMENT_REEL = ABATTEMENT_THEORIQUE;
+                if (ABATTEMENT_THEORIQUE <= PASS_00176) ABATTEMENT_REEL = PASS_00176;
+                if (ABATTEMENT_THEORIQUE >= PASS_130) ABATTEMENT_REEL = PASS_130;
+                const ABATTEMENT_SOCIAL_REEL = Math.round(ABATTEMENT_REEL);
+
+                // --- GESTION DES CHÈQUES VACANCES & ASSIETTES SOCIALES ---
+                const CHEQUES_VACANCES = parsedData.CHEQUES_VACANCES || 0;
+                const PLAFOND_CV_SOCIAL = Math.round(SMIC_HORAIRE * 151.67 * 0.30);
+                
+                let CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL = 0;
+                if (CHEQUES_VACANCES > PLAFOND_CV_SOCIAL) {
+                    CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL = PLAFOND_CV_SOCIAL;
+                } else {
+                    CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL = CHEQUES_VACANCES;
+                }
+
+                // Assiette spécifique CSG-CRDS
+                const R_SOCIAL_REEL_THEORIQUE_CSG = REVENU_BRUT_SOCIAL_PRORATA - ABATTEMENT_SOCIAL_REEL;
+
+                // Assiette sociale réelle théorique
+                const R_SOCIAL_REEL_THEORIQUE = REVENU_BRUT_SOCIAL_PRORATA - ABATTEMENT_SOCIAL_REEL - CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL;
+                
+                // Assiette sociale retenue pour calculs
+                const R_SOCIAL_REEL = R_SOCIAL_REEL_THEORIQUE < 0 ? 0 : R_SOCIAL_REEL_THEORIQUE;
+
+                // --- AFFICHAGE DU BLOC SPÉCIFIQUE DES ASSIETTES DE CALCUL ---
+                let detailAssietteSociale = "";
+                if (CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL === 0) {
+                    detailAssietteSociale = "identique à l'assiette de CSG-CRDS.";
+                } else if (CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL > 0 && CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL === CHEQUES_VACANCES) {
+                    detailAssietteSociale = `${formatEuro(REVENU_BRUT_SOCIAL_PRORATA)} (Revenu Brut Social) - ${formatEuro(ABATTEMENT_SOCIAL_REEL)} (Abattement forfaitaire de 26 %) - ${formatEuro(CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL)} (Chèques vacances déductibles socialement).`;
+                } else if (CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL > 0 && CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL < CHEQUES_VACANCES) {
+                    detailAssietteSociale = `${formatEuro(REVENU_BRUT_SOCIAL_PRORATA)} (Revenu Brut Social) - ${formatEuro(ABATTEMENT_SOCIAL_REEL)} (Abattement forfaitaire de 26 %) - ${formatEuro(CHEQUES_VACANCES_DEDUCTIBLES_SOCIAL)} (Chèques vacances déductibles socialement, dans la limite de 30 % d'un SMIC mensuel).`;
+                }
+
+                const TOTAL_DEPENSES_PRORATA = DEPENSES_PRORATA + IK_DEDUCTIBLE + BLANCHISSAGE_DEDUCTIBLE;
+
+                assiettesSummaryBlock.innerHTML = `
+                    <h3 class="text-base font-extrabold text-[#227836] uppercase tracking-wider border-b border-slate-200 pb-2">
+                        Détermination des assiettes de calcul (${simYear})
+                    </h3>
+                    <div class="space-y-3 text-sm text-slate-800">
+                        <div>
+                            <p class="font-bold">
+                                • Recettes ${simYear} = <span class="text-[#227836]">${formatEuro(RECETTES_PRORATA)}</span>
+                            </p>
+                            <p class="text-xs text-slate-500 italic ml-4">
+                                (recette jusqu'au ${dateFormatted} ramenées sur 365 jours)
+                            </p>
+                        </div>
+
+                        <div>
+                            <p class="font-bold">
+                                • Dépenses ${simYear} = <span class="text-slate-800">${formatEuro(TOTAL_DEPENSES_PRORATA)}</span>
+                            </p>
+                            <p class="text-xs text-slate-500 italic ml-4">
+                                ${formatEuro(DEPENSES_PRORATA)} (dépenses jusqu'au ${dateFormatted} ramenées sur 365 jours) + ${formatEuro(IK_DEDUCTIBLE)} (Indemnités kilométriques) + ${formatEuro(BLANCHISSAGE_DEDUCTIBLE)} (Forfait blanchissage)
+                            </p>
+                        </div>
+
+                        <div>
+                            <p class="font-bold">
+                                • Revenu Brut Social = <span class="text-slate-900">${formatEuro(REVENU_BRUT_SOCIAL_PRORATA)}</span>
+                            </p>
+                            <p class="text-xs text-slate-500 italic ml-4">
+                                ${formatEuro(RECETTES_PRORATA)} (Recettes) - [${formatEuro(DEPENSES_PRORATA)} + ${formatEuro(IK_DEDUCTIBLE)} + ${formatEuro(BLANCHISSAGE_DEDUCTIBLE)}] (Dépenses) + ${formatEuro(CHARGES_SOCIALES_PRORATA)} (Charges sociales ramenées sur 365 jours non déductibles de l'assiette sociale)
+                            </p>
+                        </div>
+
+                        <div>
+                            <p class="font-bold">
+                                • Assiette de CSG-CRDS = <span class="text-slate-900">${formatEuro(R_SOCIAL_REEL_THEORIQUE_CSG)}</span>
+                            </p>
+                            <p class="text-xs text-slate-500 italic ml-4">
+                                ${formatEuro(REVENU_BRUT_SOCIAL_PRORATA)} (Revenu Brut Social) - ${formatEuro(ABATTEMENT_SOCIAL_REEL)} (Abattement forfaitaire de 26 %)
+                            </p>
+                        </div>
+
+                        <div>
+                            <p class="font-bold">
+                                • Assiette sociale = <span class="text-[#227836] font-extrabold">${formatEuro(R_SOCIAL_REEL_THEORIQUE)}</span>
+                            </p>
+                            <p class="text-xs text-slate-500 italic ml-4">
+                                ${detailAssietteSociale}
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                // --- 2.1 CALCUL ALLOCATIONS FAMILIALES ---
+                let txAF = 0;
+                if (R_SOCIAL_REEL <= PASS_110) txAF = AF_CARPIMKO_REEL_01;
+                else if (R_SOCIAL_REEL <= PASS_140) txAF = (AF_CARPIMKO_REEL_02 / (PASS_140 - PASS_110)) * (R_SOCIAL_REEL - PASS_110);
+                else txAF = AF_CARPIMKO_REEL_02;
+
+                const COT_AF_CARPIMKO_REEL = Math.round(R_SOCIAL_REEL * txAF);
+
+                // --- 2.2 CALCUL COTISATIONS MALADIE EN RÉEL ---
+                let TX_MALAD_CARPIMKO_REEL = 0;
+                if (R_SOCIAL_REEL <= PASS_020) {
+                    TX_MALAD_CARPIMKO_REEL = MALAD_CARPIMKO_01;
+                } else if (R_SOCIAL_REEL <= PASS_040) {
+                    TX_MALAD_CARPIMKO_REEL = MALAD_CARPIMKO_01 + ((MALAD_CARPIMKO_02 - MALAD_CARPIMKO_01) * ((R_SOCIAL_REEL - PASS_020) / (PASS_040 - PASS_020)));
+                } else if (R_SOCIAL_REEL <= PASS_060) {
+                    TX_MALAD_CARPIMKO_REEL = MALAD_CARPIMKO_02 + ((MALAD_CARPIMKO_03 - MALAD_CARPIMKO_02) * ((R_SOCIAL_REEL - PASS_040) / (PASS_060 - PASS_040)));
+                } else if (R_SOCIAL_REEL <= PASS_110) {
+                    TX_MALAD_CARPIMKO_REEL = MALAD_CARPIMKO_03 + ((MALAD_CARPIMKO_04 - MALAD_CARPIMKO_03) * ((R_SOCIAL_REEL - PASS_060) / (PASS_110 - PASS_060)));
+                } else if (R_SOCIAL_REEL <= PASS_200) {
+                    TX_MALAD_CARPIMKO_REEL = MALAD_CARPIMKO_04 + ((MALAD_CARPIMKO_05 - MALAD_CARPIMKO_04) * ((R_SOCIAL_REEL - PASS_110) / (PASS_200 - PASS_110)));
+                } else if (R_SOCIAL_REEL <= PASS_300) {
+                    TX_MALAD_CARPIMKO_REEL = MALAD_CARPIMKO_05 + ((MALAD_CARPIMKO_06 - MALAD_CARPIMKO_05) * ((R_SOCIAL_REEL - PASS_200) / (PASS_300 - PASS_200)));
+                } else {
+                    TX_MALAD_CARPIMKO_REEL = MALAD_CARPIMKO_06;
+                }
+
+                const ASSIETTE_MALADIE_CARPIMKO_REEL = R_SOCIAL_REEL <= PASS_300 ? R_SOCIAL_REEL : PASS_300;
+                const COT_MALADIE_CARPIMKO_REEL = Math.round(ASSIETTE_MALADIE_CARPIMKO_REEL * TX_MALAD_CARPIMKO_REEL);
+
+                const RATIO_CONV_REEL = CA_BRUT_PRORATA > 0 ? CA_CONV_PRORATA / CA_BRUT_PRORATA : 0;
+                const TX_CPAM_CARPIMKO_REEL = TX_MALAD_CARPIMKO_REEL <= 0.001 ? MALAD_CARPIMKO_01 : (TX_MALAD_CARPIMKO_REEL - 0.001);
+
+                let COT_MALADIE_PCPAM_CARPIMKO_REEL = Math.round(ASSIETTE_MALADIE_CARPIMKO_REEL * RATIO_CONV_REEL * TX_CPAM_CARPIMKO_REEL);
+                if (COT_MALADIE_PCPAM_CARPIMKO_REEL > COT_MALADIE_CARPIMKO_REEL) {
+                    COT_MALADIE_PCPAM_CARPIMKO_REEL = COT_MALADIE_CARPIMKO_REEL;
+                }
+                const NATURE_EXO_MALADIE_REEL = COT_MALADIE_PCPAM_CARPIMKO_REEL > 0 ? "PCPAM" : "";
+                const COT_MALAD_NET_CARPIMKO_REEL = COT_MALADIE_CARPIMKO_REEL - COT_MALADIE_PCPAM_CARPIMKO_REEL;
+
+                // --- 2.4 CALCUL INDEMNITÉS JOURNALIÈRES REEL ---
+                const TX_IJ_CARPIMKO_REEL = TX_IJ_CARPIMKO_MICRO;
+                let ASSIETTE_IJ_CARPIMKO_REEL = 0;
+
+                if (R_SOCIAL_REEL <= PASS_040) {
+                    ASSIETTE_IJ_CARPIMKO_REEL = PASS_040;
+                } else if (R_SOCIAL_REEL <= PASS_300) {
+                    ASSIETTE_IJ_CARPIMKO_REEL = R_SOCIAL_REEL;
+                } else {
+                    ASSIETTE_IJ_CARPIMKO_REEL = PASS_300;
+                }
+
+                const COT_IJ_CARPIMKO_REEL = Math.round(ASSIETTE_IJ_CARPIMKO_REEL * TX_IJ_CARPIMKO_REEL);
+
+                // --- 2.5 CALCUL MALADIE ADDITIONNELLE REEL ---
+                const ASSIETTE_MALADIE_ADDITIONNELLE_CARPIMKO_REEL = Math.round(R_SOCIAL_REEL * (1 - RATIO_CONV_REEL));
+                const COT_MALADIE_ADDITIONNELLE_CARPIMKO_REEL = Math.round(ASSIETTE_MALADIE_ADDITIONNELLE_CARPIMKO_REEL * TAUX_MALADIE_ADDITIONNELLE_CARPIMKO);
+
+                // --- CONSTRUCTION DU TABLEAU URSSAF ---
+                const rows = [
+                    {
+                        libelle: "Allocations familiales",
+                        base: R_SOCIAL_REEL,
+                        taux: (txAF * 100).toFixed(2).replace('.', ','),
+                        tauxExponent: "(1)",
+                        avantExo: COT_AF_CARPIMKO_REEL,
+                        natureExo: "",
+                        montantExo: 0,
+                        aPayer: COT_AF_CARPIMKO_REEL
+                    },
+                    {
+                        libelle: "Cotisation d’assurance maladie",
+                        base: ASSIETTE_MALADIE_CARPIMKO_REEL,
+                        taux: (TX_MALAD_CARPIMKO_REEL * 100).toFixed(2).replace('.', ','),
+                        tauxExponent: "(2)",
+                        avantExo: COT_MALADIE_CARPIMKO_REEL,
+                        natureExo: NATURE_EXO_MALADIE_REEL,
+                        montantExo: COT_MALADIE_PCPAM_CARPIMKO_REEL,
+                        aPayer: COT_MALAD_NET_CARPIMKO_REEL
+                    }
+                ];
+
+                // --- 2.3 CALCUL COTISATIONS MALADIE SI R_SOCIAL_REEL > PASS_300 ---
+                if (R_SOCIAL_REEL > PASS_300) {
+                    const ASSIETTE_MALADIE3PASS_CARPIMKO_REEL = R_SOCIAL_REEL - PASS_300;
+                    const COT_MALADIE3PASS_CARPIMKO_REEL = Math.round(ASSIETTE_MALADIE3PASS_CARPIMKO_REEL * MALAD_CARPIMKO_04);
+                    
+                    let COT_MALADIE3PASS_PCPAM_CARPIMKO_REEL = Math.round(ASSIETTE_MALADIE3PASS_CARPIMKO_REEL * RATIO_CONV_REEL * (MALAD_CARPIMKO_04 - 0.001));
+                    if (COT_MALADIE3PASS_PCPAM_CARPIMKO_REEL > COT_MALADIE3PASS_CARPIMKO_REEL) {
+                        COT_MALADIE3PASS_PCPAM_CARPIMKO_REEL = COT_MALADIE3PASS_CARPIMKO_REEL;
+                    }
+
+                    const NATURE_EXO_MALADIE3PASS_REEL = COT_MALADIE3PASS_PCPAM_CARPIMKO_REEL > 0 ? "PCPAM" : "";
+                    const COT_MALAD3PASS_NET_CARPIMKO_REEL = COT_MALADIE3PASS_CARPIMKO_REEL - COT_MALADIE3PASS_PCPAM_CARPIMKO_REEL;
+
+                    rows.push({
+                        libelle: "Cotisation d’assurance maladie tranche supérieure à 3 PASS",
+                        base: ASSIETTE_MALADIE3PASS_CARPIMKO_REEL,
+                        taux: (MALAD_CARPIMKO_04 * 100).toFixed(2).replace('.', ','),
+                        tauxExponent: "",
+                        avantExo: COT_MALADIE3PASS_CARPIMKO_REEL,
+                        natureExo: NATURE_EXO_MALADIE3PASS_REEL,
+                        montantExo: COT_MALADIE3PASS_PCPAM_CARPIMKO_REEL,
+                        aPayer: COT_MALAD3PASS_NET_CARPIMKO_REEL
+                    });
+                }
+
+                rows.push(
+                    {
+                        libelle: "Indemnités journalières",
+                        base: ASSIETTE_IJ_CARPIMKO_REEL,
+                        taux: (TX_IJ_CARPIMKO_REEL * 100).toFixed(2).replace('.', ','),
+                        tauxExponent: "",
+                        avantExo: COT_IJ_CARPIMKO_REEL,
+                        natureExo: "",
+                        montantExo: 0,
+                        aPayer: COT_IJ_CARPIMKO_REEL
+                    },
+                    {
+                        libelle: "Contribution additionnelle maladie",
+                        base: ASSIETTE_MALADIE_ADDITIONNELLE_CARPIMKO_REEL,
+                        taux: (TAUX_MALADIE_ADDITIONNELLE_CARPIMKO * 100).toFixed(2).replace('.', ','),
+                        tauxExponent: "",
+                        avantExo: COT_MALADIE_ADDITIONNELLE_CARPIMKO_REEL,
+                        natureExo: "",
+                        montantExo: 0,
+                        aPayer: COT_MALADIE_ADDITIONNELLE_CARPIMKO_REEL
+                    }
+                );
+
+                // --- 2.6 CALCUL FORMATION PROFESSIONNELLE ---
+                const TX_CFP_CARPIMKO = 0.0025; // 0,25%
+                const ASSIETTE_CFP_CARPIMKO = PASS;
+                const COT_CFP_CARPIMKO_REEL = Math.round(ASSIETTE_CFP_CARPIMKO * TX_CFP_CARPIMKO);
+
+                rows.push({
+                    libelle: "Contribution formation professionnelle",
+                    base: ASSIETTE_CFP_CARPIMKO,
+                    taux: "0,25",
+                    tauxExponent: "",
+                    avantExo: COT_CFP_CARPIMKO_REEL,
+                    natureExo: "",
+                    montantExo: 0,
+                    aPayer: COT_CFP_CARPIMKO_REEL
+                });
+
+                // --- 2.7 CALCUL COTISATION URPS ---
+                if (REMPLA_CARPIMKO === "NON") {
+                    const TX_CURPS_CARPIMKO = 0.0010; // 0,10%
+                    const ASSIETTE_CURPS_CARPIMKO_REEL = R_SOCIAL_REEL;
+                    const COT_THEORIQUE_CURPS_CARPIMKO_REEL = ASSIETTE_CURPS_CARPIMKO_REEL * TX_CURPS_CARPIMKO;
+                    const PLAFOND_CURPS_CARPIMKO = PASS * 0.005;
+
+                    let COT_CURPS_CARPIMKO_REEL = 0;
+                    if (COT_THEORIQUE_CURPS_CARPIMKO_REEL <= PLAFOND_CURPS_CARPIMKO) {
+                        COT_CURPS_CARPIMKO_REEL = COT_THEORIQUE_CURPS_CARPIMKO_REEL;
+                    } else {
+                        COT_CURPS_CARPIMKO_REEL = PLAFOND_CURPS_CARPIMKO;
+                    }
+                    COT_CURPS_CARPIMKO_REEL = Math.round(COT_CURPS_CARPIMKO_REEL);
+
+                    rows.push({
+                        libelle: "Contribution aux Unions Régionales des Professionnels de Santé",
+                        base: ASSIETTE_CURPS_CARPIMKO_REEL,
+                        taux: "0,10",
+                        tauxExponent: "",
+                        avantExo: COT_CURPS_CARPIMKO_REEL,
+                        natureExo: "",
+                        montantExo: 0,
+                        aPayer: COT_CURPS_CARPIMKO_REEL
+                    });
+                }
+
+                // --- 2.8 CALCUL CSG-CRDS ---
+                const TX_CSG_CARPIMKO = 0.097; // 9,7%
+                const ASSIETTE_CSG_CARPIMKO_REEL = R_SOCIAL_REEL_THEORIQUE_CSG > 0 ? R_SOCIAL_REEL_THEORIQUE_CSG : 0;
+                const COT_CSG_CARPIMKO_REEL = Math.round(ASSIETTE_CSG_CARPIMKO_REEL * TX_CSG_CARPIMKO);
+
+                rows.push({
+                    libelle: "CSG/CRDS",
+                    base: ASSIETTE_CSG_CARPIMKO_REEL,
+                    taux: "9,70",
+                    tauxExponent: "",
+                    avantExo: COT_CSG_CARPIMKO_REEL,
+                    natureExo: "",
+                    montantExo: 0,
+                    aPayer: COT_CSG_CARPIMKO_REEL
+                });
+
+                let sumAvantExo = 0;
+                let sumMontantExo = 0;
+                let sumAPayer = 0;
+
+                tbodyUrssaf.innerHTML = rows.map(r => {
+                    sumAvantExo += r.avantExo;
+                    sumMontantExo += r.montantExo;
+                    sumAPayer += r.aPayer;
+
+                    return `
+                        <tr class="border-b border-slate-300 hover:bg-slate-50 transition">
+                            <td class="py-2.5 px-2 font-bold text-slate-900">${r.libelle}</td>
+                            <td class="py-2.5 px-2 text-center font-bold">${formatNumberInt(r.base)}</td>
+                            <td class="py-2.5 px-2 text-center font-bold whitespace-nowrap">
+                                ${r.taux} ${r.tauxExponent ? `<sup class="font-bold">${r.tauxExponent}</sup>` : ''}
+                            </td>
+                            <td class="py-2.5 px-2 text-center">${formatNumberInt(r.avantExo)}</td>
+                            <td class="py-2.5 px-2 text-center uppercase font-medium">${r.natureExo}</td>
+                            <td class="py-2.5 px-2 text-center">${formatNumberInt(r.montantExo)}</td>
+                            <td class="py-2.5 px-2 text-right font-bold whitespace-nowrap">
+                                ${formatNumberInt(r.aPayer)} ${r.aPayerExponent ? `<sup class="font-bold">${r.aPayerExponent}</sup>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Pied du tableau (Ligne TOTAL_URSSAF)
+                tfootUrssaf.innerHTML = `
+                    <tr class="bg-white">
+                        <td colspan="3" class="py-3 px-2 text-right uppercase tracking-wider font-extrabold pr-6">TOTAL</td>
+                        <td class="py-3 px-2 text-center font-extrabold whitespace-nowrap">${formatEuro(sumAvantExo)}</td>
+                        <td class="py-3 px-2"></td>
+                        <td class="py-3 px-2 text-center font-extrabold whitespace-nowrap">${formatEuro(sumMontantExo)}</td>
+                        <td class="py-3 px-2 text-right font-extrabold whitespace-nowrap text-slate-900 text-sm">${formatEuro(sumAPayer)}</td>
+                    </tr>
+                `;
+
+                // --- MISE À JOUR DYNAMIQUE DE LA BULLE BD JUNGLOO ---
+                const totalUrssaf = sumAPayer;
+                const regularisationUrssaf = totalUrssaf - URSSAF_PAYE;
+                const totalGlobal = totalUrssaf + regularisationUrssaf;
+
+                if (mascotSpeechBubble) {
+                    mascotSpeechBubble.innerHTML = `
+                        <p class="text-slate-800 leading-relaxed">
+                            Selon l’export du fichier FEC en date du <strong>${dateFormatted}</strong>, la projection sur un an pour l’année <strong>${simYear}</strong> nous permet de déterminer les cotisations suivantes pour l’année <strong>${simYearNext}</strong> :
+                        </p>
+                        <ul class="list-disc list-inside my-3 space-y-1.5 text-slate-800 font-medium">
+                            <li>Cotisations provisionnelles ${simYearNext} = <strong>${formatEuro(totalUrssaf)}</strong></li>
+                            <li>Régularisation des cotisations ${simYear} = ${formatEuro(totalUrssaf)} - ${formatEuro(URSSAF_PAYE)} = <strong>${formatEuro(regularisationUrssaf)}</strong></li>
+                        </ul>
+                        <p class="font-extrabold text-[#227836] mt-2 text-base">
+                            Soit un total de ${formatEuro(totalUrssaf)} + ${formatEuro(regularisationUrssaf)} = ${formatEuro(totalGlobal)}.
+                        </p>
+                    `;
+                }
+
+                // Affichage des sections
+                stepUpload.classList.add('hidden');
+                stepResults.classList.remove('hidden');
+                simulationOutput.classList.remove('hidden');
+
+                openAccordion();
+                stepResults.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // GESTION ACCORDÉON
+            btnToggleAccordion.addEventListener('click', () => {
+                if (accordionContent.classList.contains('hidden')) {
+                    openAccordion();
+                } else {
+                    closeAccordion();
+                }
+            });
+
+            function openAccordion() {
+                accordionContent.classList.remove('hidden');
+                accordionArrow.classList.add('rotate-180');
+            }
+
+            function closeAccordion() {
+                accordionContent.classList.add('hidden');
+                accordionArrow.classList.remove('rotate-180');
+            }
+
+            // UTILS FORMATAGE
+            function parseAmount(val) {
+                if (!val) return 0;
+                const cleanStr = val.toString().replace(/\s/g, '').replace(',', '.');
+                const num = parseFloat(cleanStr);
+                return isNaN(num) ? 0 : num;
+            }
+
+            function formatNumberInt(amount) {
+                return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount || 0);
+            }
+
+            function formatEuro(amount) {
+                return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(amount || 0);
+            }
+        });
+    </script>
+</body>
+</html>
